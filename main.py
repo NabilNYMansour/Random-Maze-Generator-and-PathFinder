@@ -1,69 +1,78 @@
 from PIL import Image, ImageDraw
 import random
 
-size_x = 101
-size_y = size_x
 
-img = Image.new("RGB", (size_x, size_y), "white")
-draw = ImageDraw.Draw(img)
-
-vertices = []
-edges = []
-for i in range(size_x):
-    draw.point((i, 0), "black")
-    draw.point((i, size_x - 1), "black")
-    if i % 2 == 1:
-        draw.point((i, 0), "green")
-        draw.point((i, size_x - 1), "green")
-        edges.append((i, 0))
-        edges.append((i, size_x - 1))
-    for j in range(size_y):
-        if j % 2 == 1:
-            edges.append((0, j))
-            edges.append((size_y - 1, j))
-        if i % 2 == 0:
-            draw.point((i, j), "black")
-        if j % 2 == 0:
-            draw.point((i, j), "black")
-        elif i % 2 == 1 and j % 2 == 1:
-            vertices.append((i, j))
-
-graph = []
-for currentVertex in vertices:
-    newRow = []
-    for compareVertex in vertices:
-        if compareVertex != currentVertex:
-            if compareVertex[0] == currentVertex[0] and abs(compareVertex[1] - currentVertex[1]) == 2:
-                if compareVertex[1] > currentVertex[1]:
-                    newRow.append((currentVertex[0], currentVertex[1]+1))
-                    edges.append((currentVertex[0], currentVertex[1]+1))
-                else:
-                    newRow.append((currentVertex[0], currentVertex[1]-1))
-                    edges.append((currentVertex[0], currentVertex[1]-1))
-            elif compareVertex[1] == currentVertex[1] and abs(compareVertex[0] - currentVertex[0]) == 2:
-                if compareVertex[0] > currentVertex[0]:
-                    newRow.append((currentVertex[0]+1, currentVertex[1]))
-                    edges.append((currentVertex[0]+1, currentVertex[1]))
-                else:
-                    newRow.append((currentVertex[0]-1, currentVertex[1]))
-                    edges.append((currentVertex[0]-1, currentVertex[1]))
-            else:
-                newRow.append(False)
-        else:
-            newRow.append(False)
-    graph.append(newRow)
+def MakeVerticies_DrawEdges(size, draw):
+    print("Making vertices and drawing the edges...")
+    vertices = []
+    edges = []
+    for i in range(size):
+        print("Progress: ", i, "/", size - 1, end="\r")
+        draw.point((i, 0), "black")
+        draw.point((i, size - 1), "black")
+        if i % 2 == 1:
+            draw.point((i, 0), "green")
+            draw.point((i, size - 1), "green")
+            edges.append((i, 0))
+            edges.append((i, size - 1))
+        for j in range(size):
+            if j % 2 == 1:
+                edges.append((0, j))
+                edges.append((size - 1, j))
+            if i % 2 == 0:
+                draw.point((i, j), "black")
+            if j % 2 == 0:
+                draw.point((i, j), "black")
+            elif i % 2 == 1 and j % 2 == 1:
+                vertices.append((i, j))
+    print()
+    return vertices, edges
 
 
-def DFS(graph, row, usedEdges, usedVertices):
-    rowCopy = row.copy()
-    random.shuffle(rowCopy)
-    for edge in rowCopy:
-        if edge not in usedEdges and row.index(edge) not in usedVertices and edge != False:
-            draw.point(edge[::-1], "white")
-            # img.save("img.png")
-            usedEdges.append(edge)
+def MakeGraph(vertices, edges, size):
+    print("Making graph...")
+    graph = []
+    for currentVertex in vertices:
+        print("Progress: ", vertices.index(currentVertex),
+              "/", len(vertices) - 1, end="\r")
+
+        newRow = []
+        if (currentVertex[0]+2, currentVertex[1]) in vertices:
+            edge = (currentVertex[0]+1, currentVertex[1])
+            index = vertices.index(currentVertex)+((size-1)//2)
+            newRow.append((edge[0], edge[1], index))
+            edges.append((edge[0], edge[1]))
+
+        if (currentVertex[0]-2, currentVertex[1]) in vertices:
+            edge = (currentVertex[0]-1, currentVertex[1])
+            index = vertices.index(currentVertex)-((size-1)//2)
+            newRow.append((edge[0], edge[1], index))
+            edges.append((edge[0], edge[1]))
+
+        if (currentVertex[0], currentVertex[1]+2) in vertices:
+            edge = (currentVertex[0], currentVertex[1]+1)
+            index = vertices.index(currentVertex)+1
+            newRow.append((edge[0], edge[1], index))
+            edges.append((edge[0], edge[1]))
+
+        if (currentVertex[0], currentVertex[1]-2) in vertices:
+            edge = (currentVertex[0], currentVertex[1]-1)
+            index = vertices.index(currentVertex)-1
+            newRow.append((edge[0], edge[1], index))
+            edges.append((edge[0], edge[1]))
+        graph.append(newRow)
+    print()
+    return graph
+
+
+def DFS(graph, row, usedEdges, usedVertices, draw):
+    random.shuffle(row)
+    for edge in row:
+        if edge not in usedEdges and edge[2] not in usedVertices and edge != False:
+            draw.point((edge[0], edge[1])[::-1], "white")
+            usedEdges.append((edge[0], edge[1]))
             usedVertices.append(graph.index(row))
-            DFS(graph, graph[row.index(edge)], usedEdges, usedVertices)
+            DFS(graph, graph[edge[2]], usedEdges, usedVertices, draw)
             break
 
 
@@ -76,94 +85,143 @@ def IsStuck(vertex, usedEdges):
     return False
 
 
-
-def Demolish(RIGHT, LEFT, UP, DOWN, vertex, usedEdges, usedVertices, draw):
+def Demolish(RIGHT, LEFT, UP, DOWN, vertices, vertex, usedEdges, usedVertices, draw, size):
     toReturn = False
 
     if vertex+1 in usedVertices and RIGHT:
-        draw.point(
-            (vertices[vertex][0], vertices[vertex][1]+1)[::-1], "white")
+        draw.point((vertices[vertex][0], vertices[vertex][1]+1)[::-1], "white")
         usedEdges.append((vertices[vertex][0], vertices[vertex][1]+1))
         usedVertices.append(vertex)
         toReturn = True
 
     elif vertex-1 in usedVertices and LEFT:
-        draw.point(
-            (vertices[vertex][0], vertices[vertex][1]-1)[::-1], "white")
+        draw.point((vertices[vertex][0], vertices[vertex][1]-1)[::-1], "white")
         usedEdges.append((vertices[vertex][0], vertices[vertex][1]-1))
         usedVertices.append(vertex)
         toReturn = True
 
-    elif vertex-((size_x-1)//2) in usedVertices and UP:
-        draw.point(
-            (vertices[vertex][0]-1, vertices[vertex][1])[::-1], "white")
+    elif vertex-((size-1)//2) in usedVertices and UP:
+        draw.point((vertices[vertex][0]-1, vertices[vertex][1])[::-1], "white")
         usedEdges.append((vertices[vertex][0]-1, vertices[vertex][1]))
         usedVertices.append(vertex)
         toReturn = True
 
-    elif vertex+((size_x-1)//2) in usedVertices and DOWN:
-        draw.point(
-            (vertices[vertex][0]+1, vertices[vertex][1])[::-1], "white")
+    elif vertex+((size-1)//2) in usedVertices and DOWN:
+        draw.point((vertices[vertex][0]+1, vertices[vertex][1])[::-1], "white")
         usedEdges.append((vertices[vertex][0]+1, vertices[vertex][1]))
         usedVertices.append(vertex)
         toReturn = True
 
     return toReturn
 
-usedEdges = []
-usedVertices = []
-previousVertex = None
-DFS(graph, graph[(((size_x-1)//2)**2//2)], usedEdges, usedVertices)
 
-while len(usedVertices) + 1 != len(vertices):
-    for vertex in range(len(vertices)):
-        if vertex not in usedVertices and IsStuck(vertices[vertex], set(edges) - set(usedEdges)):
-
-            row = (vertex)//((size_x-1)//2)
-            column = vertex - row * ((size_x-1)//2)
-
-            performDFS = False
-
-            if row == 0 and column == 0:  # RIGHT and DOWN
-                performDFS = Demolish(True, False, False, True, vertex,
-                         usedEdges, usedVertices, draw)
-
-            elif row == 0 and column == ((size_x-1)//2)-1:  # LEFT and DOWN
-                performDFS = Demolish(False, True, False, True, vertex,
-                         usedEdges, usedVertices, draw)
+def DFSPathFinding(startingVertex, EndingVertex, vertices, usedEdges, graph, row, excludingEdge, draw):
+    for edge in row:
+        if edge[2] == vertices.index(EndingVertex) and edge[0:2] in usedEdges:
+            draw.point(edge[0:2][::-1], "red")
+            draw.point(startingVertex[0:2][::-1], "red")
+            return True
+        elif edge[0:2] in usedEdges and edge[0:2] != excludingEdge[0:2]:
+            if DFSPathFinding(vertices[edge[2]], EndingVertex, vertices, usedEdges, graph, graph[edge[2]], edge, draw):
+                draw.point(edge[0:2][::-1], "red")
+                draw.point(startingVertex[0:2][::-1], "red")
+                return True
 
 
-            elif row == ((size_x-1)//2)-1 and column == 0:  # RIGHT and UP
-                performDFS = Demolish(True, False, True, False, vertex,
-                         usedEdges, usedVertices, draw)
+def DrawPath(startingVertex, EndingVertex, vertices, edges, graph, usedEdges, draw):
+    row = graph[vertices.index(startingVertex)]
+    excludingEdge = (0, 0)
+    DFSPathFinding(startingVertex, EndingVertex, vertices,
+                   usedEdges, graph, row, excludingEdge, draw)
+    draw.point(startingVertex[::-1], "yellow")
+    draw.point(EndingVertex[::-1], "blue")
 
-            elif row == ((size_x-1)//2)-1 and column == ((size_x-1)//2)-1:  # LEFT and UP
-                performDFS = Demolish(False, True, True, False, vertex,
-                         usedEdges, usedVertices, draw)
 
-            elif row == 0:  # RIGHT, LEFT, and DOWN
-                performDFS = Demolish(True, True, False, True, vertex,
-                         usedEdges, usedVertices, draw)
+def main():
+    size = 250
 
-            elif column == 0:  # UP, DOWN, and RIGHT
-                performDFS = Demolish(True, False, True, True, vertex,
-                         usedEdges, usedVertices, draw)
+    if size % 2 == 0:
+        size += 1
 
-            elif row == ((size_x-1)//2)-1:  # RIGHT, LEFT, and UP
-                performDFS = Demolish(True, True, True, False, vertex,
-                         usedEdges, usedVertices, draw)
+    img = Image.new("RGB", (size, size), "white")
+    draw = ImageDraw.Draw(img)
 
-            elif column == ((size_x-1)//2)-1:  # UP, DOWN, and LEFT
-                performDFS = Demolish(False, True, True, True, vertex,
-                         usedEdges, usedVertices, draw)
+    vertices, edges = MakeVerticies_DrawEdges(size, draw)
 
-            else:
-                performDFS = Demolish(True, True, True, True, vertex,
-                         usedEdges, usedVertices, draw)
+    graph = MakeGraph(vertices, edges, size)
 
-            if performDFS:
-                # img.save("img.png")
-                DFS(graph, graph[vertex], usedEdges, usedVertices)
+    usedEdges = []
+    usedVertices = []
 
-img = img.resize((size_x*10, size_y*10), Image.BOX)
-img.save("img.png")
+    print("Performing DFS...")
+
+    DFS(graph, graph[(((size-1)//2)**2//2)], usedEdges, usedVertices, draw)
+    while len(usedVertices)+1 != len(vertices):
+
+        choices = [i for i in range(len(vertices)) if i not in usedVertices and IsStuck(vertices[i], set(edges) - set(usedEdges)) and (
+            i+1 in usedVertices or i-1 in usedVertices or i-((size-1)//2) in usedVertices or i+((size-1)//2) in usedVertices)]
+
+        vertex = choices[0]
+
+        print("Progress: ", len(usedVertices),
+              "/", len(vertices) - 1, end="\r")
+
+        row = (vertex)//((size-1)//2)
+        column = vertex - row * ((size-1)//2)
+        performDFS = False
+
+        if row == 0 and column == 0:  # RIGHT and DOWN
+            performDFS = Demolish(True, False, False, True, vertices, vertex,
+                                  usedEdges, usedVertices, draw, size)
+
+        elif row == 0 and column == ((size-1)//2)-1:  # LEFT and DOWN
+            performDFS = Demolish(False, True, False, True, vertices, vertex,
+                                  usedEdges, usedVertices, draw, size)
+
+        elif row == ((size-1)//2)-1 and column == 0:  # RIGHT and UP
+            performDFS = Demolish(True, False, True, False, vertices, vertex,
+                                  usedEdges, usedVertices, draw, size)
+
+        elif row == ((size-1)//2)-1 and column == ((size-1)//2)-1:  # LEFT and UP
+            performDFS = Demolish(False, True, True, False, vertices, vertex,
+                                  usedEdges, usedVertices, draw, size)
+
+        elif row == 0:  # RIGHT, LEFT, and DOWN
+            performDFS = Demolish(True, True, False, True, vertices, vertex,
+                                  usedEdges, usedVertices, draw, size)
+
+        elif column == 0:  # UP, DOWN, and RIGHT
+            performDFS = Demolish(True, False, True, True, vertices, vertex,
+                                  usedEdges, usedVertices, draw, size)
+
+        elif row == ((size-1)//2)-1:  # RIGHT, LEFT, and UP
+            performDFS = Demolish(True, True, True, False, vertices, vertex,
+                                  usedEdges, usedVertices, draw, size)
+
+        elif column == ((size-1)//2)-1:  # UP, DOWN, and LEFT
+            performDFS = Demolish(False, True, True, True, vertices, vertex,
+                                  usedEdges, usedVertices, draw, size)
+
+        else:
+            performDFS = Demolish(True, True, True, True, vertices, vertex,
+                                  usedEdges, usedVertices, draw, size)
+
+        if performDFS:
+            DFS(graph, graph[vertex], usedEdges, usedVertices, draw)
+    print("Progress: ", len(usedVertices), "/", len(vertices) - 1, end="\r")
+    print()
+    print("DONE: maze generation")
+
+    DrawPath(vertices[0], vertices[-1], vertices,
+             edges, graph, usedEdges, draw)
+
+    print("DONE: path finding")
+
+    print("Resizing image...")
+    img = img.resize((size*10, size*10), Image.BOX)
+
+    print("Saving image...")
+    img.save("img.png")
+
+
+main()
