@@ -1,2 +1,2 @@
-    # draw.point((i,0), "black")
-    # draw.point((i,size_x - 1), "black")
+            if row == 0:
+                draw.point(vertices[vertex][::-1], "green")
