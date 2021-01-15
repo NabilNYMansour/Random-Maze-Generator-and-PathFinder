@@ -11,8 +11,6 @@ def MakeVerticies_DrawEdges(size, draw):
         draw.point((i, 0), "black")
         draw.point((i, size - 1), "black")
         if i % 2 == 1:
-            draw.point((i, 0), "green")
-            draw.point((i, size - 1), "green")
             edges.append((i, 0))
             edges.append((i, size - 1))
         for j in range(size):
@@ -68,10 +66,12 @@ def MakeGraph(vertices, edges, size):
 def DFS(graph, row, usedEdges, usedVertices, draw):
     random.shuffle(row)
     for edge in row:
-        if edge not in usedEdges and edge[2] not in usedVertices and edge != False:
+        if edge not in usedEdges and edge[2] not in usedVertices:
             draw.point((edge[0], edge[1])[::-1], "white")
-            usedEdges.append((edge[0], edge[1]))
-            usedVertices.append(graph.index(row))
+            if (edge[0], edge[1]) not in usedEdges:
+                usedEdges.append((edge[0], edge[1]))
+            if graph.index(row) not in usedVertices:
+                usedVertices.append(graph.index(row))
             DFS(graph, graph[edge[2]], usedEdges, usedVertices, draw)
             break
 
@@ -91,54 +91,66 @@ def Demolish(RIGHT, LEFT, UP, DOWN, vertices, vertex, usedEdges, usedVertices, d
     if vertex+1 in usedVertices and RIGHT:
         draw.point((vertices[vertex][0], vertices[vertex][1]+1)[::-1], "white")
         usedEdges.append((vertices[vertex][0], vertices[vertex][1]+1))
-        usedVertices.append(vertex)
+        if vertex not in usedVertices:
+            usedVertices.append(vertex)
         toReturn = True
 
     elif vertex-1 in usedVertices and LEFT:
         draw.point((vertices[vertex][0], vertices[vertex][1]-1)[::-1], "white")
         usedEdges.append((vertices[vertex][0], vertices[vertex][1]-1))
-        usedVertices.append(vertex)
+        if vertex not in usedVertices:
+            usedVertices.append(vertex)
         toReturn = True
 
     elif vertex-((size-1)//2) in usedVertices and UP:
         draw.point((vertices[vertex][0]-1, vertices[vertex][1])[::-1], "white")
         usedEdges.append((vertices[vertex][0]-1, vertices[vertex][1]))
-        usedVertices.append(vertex)
+        if vertex not in usedVertices:
+            usedVertices.append(vertex)
         toReturn = True
 
     elif vertex+((size-1)//2) in usedVertices and DOWN:
         draw.point((vertices[vertex][0]+1, vertices[vertex][1])[::-1], "white")
         usedEdges.append((vertices[vertex][0]+1, vertices[vertex][1]))
-        usedVertices.append(vertex)
+        if vertex not in usedVertices:
+            usedVertices.append(vertex)
         toReturn = True
 
     return toReturn
 
 
-def DFSPathFinding(startingVertex, EndingVertex, vertices, usedEdges, graph, row, excludingEdge, draw):
+def DFSPathFinding(startingVertex, EndingVertex, vertices, usedEdges, graph, row, excludingEdge, draw, color):
     for edge in row:
         if edge[2] == vertices.index(EndingVertex) and edge[0:2] in usedEdges:
-            draw.point(edge[0:2][::-1], "red")
-            draw.point(startingVertex[0:2][::-1], "red")
+            draw.point(edge[0:2][::-1], color)
+            draw.point(startingVertex[0:2][::-1], color)
+            
             return True
         elif edge[0:2] in usedEdges and edge[0:2] != excludingEdge[0:2]:
-            if DFSPathFinding(vertices[edge[2]], EndingVertex, vertices, usedEdges, graph, graph[edge[2]], edge, draw):
-                draw.point(edge[0:2][::-1], "red")
-                draw.point(startingVertex[0:2][::-1], "red")
+            if DFSPathFinding(vertices[edge[2]], EndingVertex, vertices, usedEdges, graph, graph[edge[2]], edge, draw, color):
+                draw.point(edge[0:2][::-1], color)
+                draw.point(startingVertex[0:2][::-1], color)
+                
                 return True
 
 
-def DrawPath(startingVertex, EndingVertex, vertices, edges, graph, usedEdges, draw):
+def DrawPath(startingVertex, EndingVertex, vertices, edges, graph, usedEdges, draw, color):
     row = graph[vertices.index(startingVertex)]
     excludingEdge = (0, 0)
     DFSPathFinding(startingVertex, EndingVertex, vertices,
-                   usedEdges, graph, row, excludingEdge, draw)
+                   usedEdges, graph, row, excludingEdge, draw, color)
     draw.point(startingVertex[::-1], "yellow")
     draw.point(EndingVertex[::-1], "blue")
 
 
+def getRow(vertex, size):
+    return (vertex)//((size-1)//2)
+
+def getColumn(row,vertex, size):
+    return vertex - row * ((size-1)//2)
+
 def main():
-    size = 250
+    size = 100
 
     if size % 2 == 0:
         size += 1
@@ -155,19 +167,31 @@ def main():
 
     print("Performing DFS...")
 
-    DFS(graph, graph[(((size-1)//2)**2//2)], usedEdges, usedVertices, draw)
-    while len(usedVertices)+1 != len(vertices):
+    DFS(graph, graph[len(vertices)//2], usedEdges, usedVertices, draw)
 
-        choices = [i for i in range(len(vertices)) if i not in usedVertices and IsStuck(vertices[i], set(edges) - set(usedEdges)) and (
-            i+1 in usedVertices or i-1 in usedVertices or i-((size-1)//2) in usedVertices or i+((size-1)//2) in usedVertices)]
+    while len(usedVertices) < len(vertices):
 
-        vertex = choices[0]
+        choices = [i+1 for i in usedVertices if i+1 not in usedVertices and i+1 < len(vertices) and getColumn(getRow(i+1, size), i+1, size) != 0]
+        choices.extend([i-1 for i in usedVertices if i-1 not in usedVertices and i-1 not in choices and i-1 > 0 and getColumn(getRow(i-1, size), i-1, size) != ((size)//2)-1])
+        choices.extend([i+((size-1)//2) for i in usedVertices if i+((size-1)//2) not in usedVertices and i+((size-1)//2) not in choices and i+((size-1)//2) < len(vertices)])
+        choices.extend([i-((size-1)//2) for i in usedVertices if i-((size-1)//2) not in usedVertices and i-((size-1)//2) not in choices and i-((size-1)//2) > 0])
+        choices = [i for i in choices if IsStuck(vertices[i], set(edges) - set(usedEdges))]
+
+        if choices == []:
+            for vertex in range(len(vertices)):
+                if IsStuck(vertices[vertex], set(edges) - set(usedEdges)):
+                    break
+            if not IsStuck(vertices[vertex], set(edges) - set(usedEdges)):
+                usedVertices = [i for i in range(len(vertices))]
+                break
+        else:
+            vertex = choices[random.randint(0, len(choices)-1)]
 
         print("Progress: ", len(usedVertices),
-              "/", len(vertices) - 1, end="\r")
+              "/", len(vertices)-1, end="\r")
 
-        row = (vertex)//((size-1)//2)
-        column = vertex - row * ((size-1)//2)
+        row =  getRow(vertex, size)
+        column = getColumn(row, vertex, size)
         performDFS = False
 
         if row == 0 and column == 0:  # RIGHT and DOWN
@@ -208,12 +232,16 @@ def main():
 
         if performDFS:
             DFS(graph, graph[vertex], usedEdges, usedVertices, draw)
-    print("Progress: ", len(usedVertices), "/", len(vertices) - 1, end="\r")
-    print()
-    print("DONE: maze generation")
 
+    print("Progress: ", len(usedVertices)-1,"/", len(vertices)-1, end="\r")
+    print("\nDONE: maze generation")
+
+    DrawPath(vertices[0], (1, vertices[-1][1]),
+             vertices, edges, graph, usedEdges, draw, "tomato")
+    DrawPath(vertices[0], (vertices[-1][1], 1),
+             vertices, edges, graph, usedEdges, draw, "purple")
     DrawPath(vertices[0], vertices[-1], vertices,
-             edges, graph, usedEdges, draw)
+             edges, graph, usedEdges, draw, "red")
 
     print("DONE: path finding")
 
