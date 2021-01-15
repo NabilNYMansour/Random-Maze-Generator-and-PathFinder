@@ -124,13 +124,13 @@ def DFSPathFinding(startingVertex, EndingVertex, vertices, usedEdges, graph, row
         if edge[2] == vertices.index(EndingVertex) and edge[0:2] in usedEdges:
             draw.point(edge[0:2][::-1], color)
             draw.point(startingVertex[0:2][::-1], color)
-            
+
             return True
         elif edge[0:2] in usedEdges and edge[0:2] != excludingEdge[0:2]:
             if DFSPathFinding(vertices[edge[2]], EndingVertex, vertices, usedEdges, graph, graph[edge[2]], edge, draw, color):
                 draw.point(edge[0:2][::-1], color)
                 draw.point(startingVertex[0:2][::-1], color)
-                
+
                 return True
 
 
@@ -146,11 +146,13 @@ def DrawPath(startingVertex, EndingVertex, vertices, edges, graph, usedEdges, dr
 def getRow(vertex, size):
     return (vertex)//((size-1)//2)
 
-def getColumn(row,vertex, size):
+
+def getColumn(row, vertex, size):
     return vertex - row * ((size-1)//2)
 
+
 def main():
-    size = 100
+    size = 50
 
     if size % 2 == 0:
         size += 1
@@ -171,11 +173,16 @@ def main():
 
     while len(usedVertices) < len(vertices):
 
-        choices = [i+1 for i in usedVertices if i+1 not in usedVertices and i+1 < len(vertices) and getColumn(getRow(i+1, size), i+1, size) != 0]
-        choices.extend([i-1 for i in usedVertices if i-1 not in usedVertices and i-1 not in choices and i-1 > 0 and getColumn(getRow(i-1, size), i-1, size) != ((size)//2)-1])
-        choices.extend([i+((size-1)//2) for i in usedVertices if i+((size-1)//2) not in usedVertices and i+((size-1)//2) not in choices and i+((size-1)//2) < len(vertices)])
-        choices.extend([i-((size-1)//2) for i in usedVertices if i-((size-1)//2) not in usedVertices and i-((size-1)//2) not in choices and i-((size-1)//2) > 0])
-        choices = [i for i in choices if IsStuck(vertices[i], set(edges) - set(usedEdges))]
+        choices = [i+1 for i in usedVertices if i+1 not in usedVertices and i +
+                   1 < len(vertices) and getColumn(getRow(i+1, size), i+1, size) != 0]
+        choices.extend([i-1 for i in usedVertices if i-1 not in usedVertices and i -
+                        1 not in choices and i-1 > 0 and getColumn(getRow(i-1, size), i-1, size) != ((size)//2)-1])
+        choices.extend([i+((size-1)//2) for i in usedVertices if i+((size-1)//2)
+                        not in usedVertices and i+((size-1)//2) not in choices and i+((size-1)//2) < len(vertices)])
+        choices.extend([i-((size-1)//2) for i in usedVertices if i-((size-1)//2)
+                        not in usedVertices and i-((size-1)//2) not in choices and i-((size-1)//2) > 0])
+        choices = [i for i in choices if IsStuck(
+            vertices[i], set(edges) - set(usedEdges))]
 
         if choices == []:
             for vertex in range(len(vertices)):
@@ -190,7 +197,7 @@ def main():
         print("Progress: ", len(usedVertices),
               "/", len(vertices)-1, end="\r")
 
-        row =  getRow(vertex, size)
+        row = getRow(vertex, size)
         column = getColumn(row, vertex, size)
         performDFS = False
 
@@ -233,7 +240,7 @@ def main():
         if performDFS:
             DFS(graph, graph[vertex], usedEdges, usedVertices, draw)
 
-    print("Progress: ", len(usedVertices)-1,"/", len(vertices)-1, end="\r")
+    print("Progress: ", len(usedVertices)-1, "/", len(vertices)-1, end="\r")
     print("\nDONE: maze generation")
 
     DrawPath(vertices[0], (1, vertices[-1][1]),
