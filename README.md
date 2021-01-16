@@ -1,5 +1,5 @@
 ﻿# Random Maze Generator and PathFinder
-This is a python program that generates a maze randomly and finds a pathway that connects the cornors together.
+This is a python program that generates a maze randomly and finds a pathway that connects the corners together.
 Requires **PIL** python library (also known as **pillow**) to run. If you don't have it, you can learn how to download it [here](https://pypi.org/project/Pillow/2.2.2/).
 
 ---
